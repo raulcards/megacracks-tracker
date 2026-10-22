@@ -1793,7 +1793,29 @@ function renderNevoie(containerId){
       return `<div style="margin-top:10px;"><b>${escapeHtml(g)}</b> · lipsesc ${m.length}<div class="hint">${m.length ? escapeHtml(fmtNums(m)) : 'Complet ✓'}</div></div>`;
     }).join('');
   });
-  panel.innerHTML = `<div class="card"><h2>Ce am nevoie</h2><div class="hint">Se actualizează singur din ce ai în colecție. Numerele încă needitate nu sunt incluse.</div>${CATEGORIES.map((cat,i) => `<h3 class="ck-h" style="margin-top:16px;">${CAT_LABEL[cat]}</h3>${parts[i]}`).join('')}</div>`;
+  // Lista de copiat: toate numerele lipsa, din toate categoriile, fara cele cu BIS sau IND (nu au rost la schimburi/cautat pe net).
+  const copyNums = CATEGORIES.flatMap(cat => missingList(cat).map(i => i.n)).filter(n => !/BIS|IND/i.test(n));
+  panel.innerHTML = `<div class="card"><h2>Ce am nevoie</h2><div class="hint">Se actualizează singur din ce ai în colecție. Numerele încă needitate nu sunt incluse.</div>${CATEGORIES.map((cat,i) => `<h3 class="ck-h" style="margin-top:16px;">${CAT_LABEL[cat]}</h3>${parts[i]}`).join('')}</div>
+  <div class="card" style="margin-top:16px;">
+    <h2>Listă de copiat</h2>
+    <div class="hint">Total cartonașe lipsă: ${copyNums.length} (fără Bis/Índice, nu au sens la schimburi)</div>
+    <textarea id="nevoie-copy-text" readonly style="margin-top:8px; min-height:120px; font-family:'Barlow Semi Condensed',system-ui,sans-serif; font-size:14px; white-space:pre-wrap;">${escapeHtml(copyNums.join(', '))}</textarea>
+    <button class="btn secondary small" id="nevoie-copy-btn" style="margin-top:8px;">Copiază lista</button>
+  </div>`;
+  const copyBtn = document.getElementById('nevoie-copy-btn');
+  if(copyBtn){
+    copyBtn.onclick = () => {
+      const ta = document.getElementById('nevoie-copy-text');
+      const text = copyNums.join(', ');
+      const done = () => { copyBtn.textContent = 'Copiat ✓'; setTimeout(() => { copyBtn.textContent = 'Copiază lista'; }, 1500); };
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(done).catch(() => { ta.select(); try{ document.execCommand('copy'); done(); }catch(e){} });
+      } else {
+        ta.select();
+        try{ document.execCommand('copy'); done(); }catch(e){}
+      }
+    };
+  }
 }
 
 function renderNeededItem(item){
